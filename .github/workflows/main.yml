@@ -1,0 +1,38 @@
+name: Build CarPlay Web Browser IPA
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode Version
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+
+      - name: Compile Swift & Package IPA
+        run: |
+          mkdir -p Payload/CarPlayWebBrowser.app
+          
+          # Biên dịch trực tiếp tất cả file Swift ở thư mục gốc cho iOS ARM64
+          xcrun -sdk iphoneos swiftc -target arm64-apple-ios15.0 \
+            -emit-executable -o Payload/CarPlayWebBrowser.app/CarPlayWebBrowser \
+            *.swift \
+            -framework UIKit -framework WebKit -framework SwiftUI -framework CarPlay -framework Foundation
+          
+          # Sao chép Info.plist
+          cp Info.plist Payload/CarPlayWebBrowser.app/
+          
+          # Nén thành file IPA hoàn chỉnh
+          zip -r CarPlayWebBrowser.ipa Payload
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CarPlayWebBrowser-IPA
+          path: CarPlayWebBrowser.ipa
