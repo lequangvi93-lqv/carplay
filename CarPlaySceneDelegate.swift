@@ -2,15 +2,14 @@
 //  CarPlaySceneDelegate.swift
 //  CarPlayWebBrowser
 //
-//  CarPlay Scene Delegate quản lý cửa sổ hiển thị đồ họa web trên màn hình CarPlay.
+//  CarPlay Scene Delegate sử dụng MapTemplate để mở rộng quyền hiển thị giao diện đồ họa web toàn màn hình trên xe thực tế.
 //
 
 import UIKit
 import CarPlay
 
-class CarPlaySceneDelegate: NSObject, CPTemplateApplicationSceneDelegate {
+class CarPlaySceneDelegate: NSObject, CPTemplateApplicationSceneDelegate, CPMapTemplateDelegate {
     
-    // Lưu trữ kết nối với UIWindow của CarPlay
     var carWindow: UIWindow?
     var interfaceController: CPInterfaceController?
     
@@ -22,18 +21,22 @@ class CarPlaySceneDelegate: NSObject, CPTemplateApplicationSceneDelegate {
         self.interfaceController = interfaceController
         self.carWindow = window
         
-        print("[CarPlaySceneDelegate] CarPlay Window Connected! Displaying Web Browser UI...")
+        print("[CarPlaySceneDelegate] Đã kết nối với màn hình CarPlay của xe!")
         
-        // Khởi tạo và thiết lập WebBrowserCarViewController làm Root View Controller của màn hình CarPlay
+        // 1. Tạo WebBrowserCarViewController hiển thị WKWebView
         let browserVC = WebBrowserCarViewController()
         let navigationController = UINavigationController(rootViewController: browserVC)
-        navigationController.isNavigationBarHidden = true // Tự tạo custom navbar tối ưu cho CarPlay
+        navigationController.isNavigationBarHidden = true
         
+        // 2. Gán trực tiếp vào UIWindow của CarPlay
         window.rootViewController = navigationController
         window.makeKeyAndVisible()
         
-        // Tạo một template CarPlay cơ bản để giữ kết nối interfaceController không bị đứt
-        setupFallbackCarPlayTemplate(interfaceController: interfaceController)
+        // 3. Sử dụng CPMapTemplate làm khung khởi chạy chuẩn giúp iOS CarPlay chấp nhận ứng dụng đồ họa trên xe thật
+        let mapTemplate = CPMapTemplate()
+        mapTemplate.mapDelegate = self
+        
+        interfaceController.setRootTemplate(mapTemplate, animated: false, completion: nil)
     }
     
     func templateApplicationScene(
@@ -41,16 +44,8 @@ class CarPlaySceneDelegate: NSObject, CPTemplateApplicationSceneDelegate {
         didDisconnectInterfaceController interfaceController: CPInterfaceController,
         from window: UIWindow
     ) {
-        print("[CarPlaySceneDelegate] CarPlay Window Disconnected.")
+        print("[CarPlaySceneDelegate] Đã ngắt kết nối với CarPlay.")
         self.carWindow = nil
         self.interfaceController = nil
-    }
-    
-    private func setupFallbackCarPlayTemplate(interfaceController: CPInterfaceController) {
-        let item = CPListItem(text: "Đang hiển thị Trình Duyệt Web", detailText: "Xem trên màn hình chính của xe")
-        let section = CPListSection(items: [item])
-        let listTemplate = CPListTemplate(title: "Trình Duyệt Web", sections: [section])
-        
-        interfaceController.setRootTemplate(listTemplate, animated: false, completion: nil)
     }
 }
